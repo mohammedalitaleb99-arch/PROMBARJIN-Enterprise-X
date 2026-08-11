@@ -1,0 +1,10 @@
+{
+  "name": "PROMBARJIN Ω Enterprise X",
+  "short_name": "PROMBARJIN",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "description": "Internet-connected executive intelligence workspace",
+  "icons": []
+}
