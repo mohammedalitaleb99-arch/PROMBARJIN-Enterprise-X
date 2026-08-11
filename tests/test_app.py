@@ -18,3 +18,9 @@ def test_memory_and_decision():
     assert client.post('/api/memory',json={'key':'mission','value':'Build PROMBARJIN'}).status_code==200
     assert client.post('/api/decision',json={'title':'MVP','rationale':'Start local-first','confidence':90}).status_code==200
     state=client.get('/api/state').json(); assert state['memories']; assert state['decisions']
+
+def test_market_without_key_is_safe():
+    os.environ.pop('TWELVE_DATA_API_KEY', None)
+    r=client.get('/api/market/quote?symbol=AAPL')
+    assert r.status_code==200
+    assert r.json()['status']=='not_configured'
