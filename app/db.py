@@ -2,7 +2,7 @@ import os
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(os.getenv('PROMBARJIN_DB', '/data/promb arjin.db'))
+DB_PATH = Path(os.getenv('PROMBARJIN_DB', '/data/prombarjin.db'))
 
 
 def connect():
