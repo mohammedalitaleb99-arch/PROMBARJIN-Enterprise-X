@@ -2,9 +2,10 @@ services:
   - type: web
     name: prombarjin-enterprise-x
     runtime: python
-    plan: free
+    plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: OPENAI_API_KEY
         sync: false
@@ -12,6 +13,8 @@ services:
         value: gpt-5-mini
       - key: TWELVE_DATA_API_KEY
         sync: false
+      - key: PROMBARJIN_DB
+        value: /data/prombarjin.db
     disk:
       name: prombarjin-data
       mountPath: /data
