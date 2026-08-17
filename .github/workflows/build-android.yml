@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -40,7 +40,9 @@ jobs:
 
       - name: Install Capacitor dependencies
         working-directory: mobile
-        run: npm install
+        run: |
+          npm install
+          npm install --save-dev typescript
 
       - name: Prepare web assets
         run: |
