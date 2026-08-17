@@ -40,7 +40,9 @@ jobs:
 
       - name: Install Capacitor dependencies
         working-directory: mobile
-        run: npm install
+        run: |
+          npm install
+          npm install --save-dev typescript
 
       - name: Prepare web assets
         run: |
