@@ -26,6 +26,8 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android platform/build tools
         run: |
@@ -40,9 +42,7 @@ jobs:
 
       - name: Install Capacitor dependencies
         working-directory: mobile
-        run: |
-          npm install
-          npm install --save-dev typescript
+        run: npm install
 
       - name: Prepare web assets
         run: |
