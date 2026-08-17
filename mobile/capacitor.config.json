@@ -3,6 +3,7 @@
   "appName": "PROMBARJIN Ω Enterprise X",
   "webDir": "www",
   "server": {
+    "url": "http://127.0.0.1:8000",
     "androidScheme": "https"
   }
 }
