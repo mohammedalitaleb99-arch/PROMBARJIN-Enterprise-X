@@ -42,7 +42,16 @@ jobs:
 
       - name: Install Capacitor dependencies
         working-directory: mobile
-        run: npm install
+        run: npm install --no-audit --no-fund
+
+      - name: Verify Capacitor toolchain
+        working-directory: mobile
+        run: |
+          node --version
+          npm --version
+          npx tsc --version
+          node -e "const fs=require('fs'); JSON.parse(fs.readFileSync('capacitor.config.json','utf8')); console.log('Capacitor JSON config OK')"
+          npx cap --version
 
       - name: Prepare web assets
         run: |
