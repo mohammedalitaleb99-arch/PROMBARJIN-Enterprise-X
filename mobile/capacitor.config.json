@@ -1,0 +1,9 @@
+{
+  "appId": "com.prombarjin.omegaenterprise",
+  "appName": "PROMBARJIN Ω Enterprise X",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
