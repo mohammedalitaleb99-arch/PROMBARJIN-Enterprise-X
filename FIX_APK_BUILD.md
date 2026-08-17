@@ -1,1 +1,0 @@
-Temporary build fix: the Capacitor Android workflow requires TypeScript because mobile/capacitor.config.ts is used. The workflow installs TypeScript before running `npx cap add android`.
