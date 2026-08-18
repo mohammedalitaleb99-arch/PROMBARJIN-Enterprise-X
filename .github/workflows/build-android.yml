@@ -86,7 +86,7 @@ jobs:
           APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          AAPT_OUT="$(./mobile/android/build-tools/35.0.0/aapt dump badging "$APK" 2>/dev/null || true)"
+          AAPT_OUT="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" 2>/dev/null || true)"
           echo "$AAPT_OUT" | grep -F "package: name='com.prombarjin.omegaenterprise.v2'"
           echo "$AAPT_OUT" | grep -F "launchable-activity"
           echo "APK integrity and package checks OK"
