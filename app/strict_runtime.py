@@ -23,7 +23,6 @@ def patch_omega_compliance(mod: Any) -> Any:
         p = original_classify(text)
         t = text.lower()
         matched = [d for d in mod.DOMAINS if d in t]
-
         if "oil & gas" in t or ("oil" in t and "gas" in t):
             primary = "oil & gas"
         elif any(term in t for term in ("finance", "investment", "accounting", "npv", "irr", "valuation", "financial")):
@@ -32,17 +31,14 @@ def patch_omega_compliance(mod: Any) -> Any:
             primary = matched[0]
         else:
             primary = "general"
-
         p["primary_domain"] = primary
         p["secondary_domains"] = [d for d in matched if d != primary]
-
         if any(x in t for x in ("research", "investigate", "research an", "research the")):
             p["mission"] = "research"
         elif any(x in t for x in ("should we", "recommend", "decide", "decision", "choose")):
             p["mission"] = "decision"
         else:
             p["mission"] = "analysis"
-
         if any(x in t for x in ("decision memo", "board memo", "investment memo")):
             p["expected_output"] = "decision memo"
         elif "memo" in t and p["mission"] == "decision":
@@ -50,7 +46,6 @@ def patch_omega_compliance(mod: Any) -> Any:
         return p
 
     mod.classify_request = classify_request
-
     if not hasattr(mod.Evidence, "confidence"):
         mod.Evidence.confidence = property(_evidence_confidence)
 
@@ -66,7 +61,6 @@ def patch_omega_compliance(mod: Any) -> Any:
 
     mod.master_runtime = master_runtime
 
-    # Keep Part 07 strict output aligned with the declared specification.
     try:
         from . import omega_strict
         original_energy_runtime = omega_strict.energy_runtime
@@ -78,22 +72,16 @@ def patch_omega_compliance(mod: Any) -> Any:
                 result["sector"].append("Supporting Services")
             result["energy_market"] = list(result.get("market", []))
             result["esg"] = list(result.get("esg", []))
-            if "ESG Assessment" not in result["esg"]:
-                result["esg"].append("ESG Assessment")
             return result
 
         omega_strict.energy_runtime = strict_energy_runtime
     except Exception:
-        # The compliance patch must remain safe if strict runtime is not
-        # importable in a reduced test environment.
         pass
 
-    # Normalize energy-market price keys for deterministic API/test contracts.
     original_energy_market = mod.energy_market
 
     def energy_market(data: dict[str, Any]) -> dict[str, Any]:
         result = original_energy_market(data)
-        prices = result.get("commodity_prices", {})
         aliases = {
             "WTI": "wti",
             "Brent": "brent",
@@ -106,7 +94,9 @@ def patch_omega_compliance(mod: Any) -> Any:
             "Carbon": "carbon",
             "Hydrogen": "hydrogen",
         }
-        result["commodity_prices"] = {label: data.get(key) for label, key in aliases.items()}
+        canonical = {label: data.get(key) for label, key in aliases.items()}
+        legacy = {key: data.get(key) for key in aliases.values()}
+        result["commodity_prices"] = {**legacy, **canonical}
         return result
 
     mod.energy_market = energy_market
