@@ -58,6 +58,10 @@ jobs:
           rm -rf mobile/www
           mkdir -p mobile/www
           cp -R static/. mobile/www/
+          test -s mobile/www/index.html
+          test -s mobile/www/app.js
+          test -s mobile/www/app.css
+          echo "Bundled web UI preflight OK"
 
       - name: Create Android project
         working-directory: mobile
@@ -67,13 +71,29 @@ jobs:
         working-directory: mobile
         run: npx cap sync android
 
+      - name: Verify generated Android app identity
+        run: |
+          test -f mobile/android/app/src/main/AndroidManifest.xml
+          grep -R "com.prombarjin.omegaenterprise.v2" mobile/android/app/src/main mobile/android/app/build.gradle
+          echo "Android package identity verified"
+
       - name: Build debug APK
         working-directory: mobile/android
         run: ./gradlew assembleDebug --no-daemon
 
+      - name: Validate APK artifact
+        run: |
+          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          AAPT_OUT="$(./mobile/android/build-tools/35.0.0/aapt dump badging "$APK" 2>/dev/null || true)"
+          echo "$AAPT_OUT" | grep -F "package: name='com.prombarjin.omegaenterprise.v2'"
+          echo "$AAPT_OUT" | grep -F "launchable-activity"
+          echo "APK integrity and package checks OK"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PROMBARJIN-OMEGA-ENTERPRISE-X-Android-debug
+          name: PROMBARJIN-OMEGA-ENTERPRISE-X-Android-debug-v2
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
