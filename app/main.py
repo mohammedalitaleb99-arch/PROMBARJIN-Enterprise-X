@@ -15,7 +15,7 @@ from .omega_strict import build_strict_runtime
 BASE = Path(__file__).resolve().parent.parent
 
 @asynccontextmanager
-def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):
     init_db()
     yield
 
