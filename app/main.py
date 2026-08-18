@@ -8,9 +8,10 @@ from .db import init_db, add_message, get_messages, add_memory, get_memories, ad
 from .ai import generate_reply
 from .online import quote, fetch_public_source
 from .omega_engine import build_runtime_context, final_quality_gate
+from .omega_compliance import master_runtime, action_engine, output_profile
 
 BASE = Path(__file__).resolve().parent.parent
-app = FastAPI(title='PROMBARJIN Ω Enterprise X', version='1.0.0')
+app = FastAPI(title='PROMBARJIN Ω Enterprise X', version='1.1.0')
 app.mount('/static', StaticFiles(directory=BASE / 'static'), name='static')
 init_db()
 
@@ -43,6 +44,7 @@ def health():
         'market_gateway': True,
         'omega_runtime': True,
         'governance_gate': True,
+        'strict_spec_version': '1.0',
     }
 
 @app.get('/api/state')
@@ -79,39 +81,39 @@ def source(url: str):
 @app.post('/api/chat')
 def chat(req: ChatRequest):
     add_message('user', req.message)
+    compliance = master_runtime(req.message)
     runtime = build_runtime_context(req.message)
     profile = runtime['profile']
     context = (
-        'PROMBARJIN OMEGA EXECUTABLE MASTER RUNTIME. '
+        'PROMBARJIN OMEGA STRICT MASTER RUNTIME. '
         'Priorities=P1 Truth>P2 Safety>P3 Accuracy>P4 Logical Consistency>P5 Evidence Quality>'
         'P6 Completeness>P7 Executive Utility>P8 Efficiency. '
         f"Mission={profile.mission}; Primary={profile.primary_domain}; Secondary={profile.secondary_domains}; "
         f"Complexity={profile.complexity}; Urgency={profile.urgency}; Risk={profile.decision_risk}; "
         f"Evidence={profile.evidence_requirement}; Depth={profile.required_depth}; Output={profile.expected_output}. "
-        f"Active engines={runtime['engines']}. "
-        'Required analysis controls: alternative hypotheses>=3; root-cause checks; assumptions audit; '
-        'scenario analysis; uncertainty disclosure; evidence discipline; risk identification; executive conclusion; '
-        'no fabricated sources or facts. Do not expose internal chain-of-thought. '
+        f"Compliance engines={compliance['engines']}; execution_mode={compliance['execution_mode']}. "
+        'Apply problem identification, first/second/third order analysis, root cause analysis, counterfactuals, '
+        'minimum three alternative hypotheses, assumption audit, bias firewall, information asymmetry, decision impact, '
+        'uncertainty disclosure, research/source discipline, decision matrix, risk analysis, domain controls, memory, '
+        'governance, audit traceability and output compilation. Never fabricate, never invent sources, and never expose internal chain-of-thought.'
     )
     reply = generate_reply(req.message, context, get_messages())
-    gate = final_quality_gate(
-        answer=reply,
-        profile=profile,
-        evidence=[],
-        risks=[],
-        audit=runtime['audit'],
-    )
+    gate = final_quality_gate(answer=reply, profile=profile, evidence=[], risks=[], audit=runtime['audit'])
     if not gate.release_ready:
         reply = (
-            'Execution gate blocked release because the required OMEGA validation conditions were not satisfied.\n\n'
-            f"Missing/failed controls: {', '.join(gate.issues) or 'none reported'}\n"
-            'Required next action: provide or retrieve sufficient evidence, validate assumptions, and rerun the mission.'
+            'OMEGA RELEASE GATE: BLOCKED. The current execution did not satisfy the strict evidence/governance release conditions.\n\n'
+            f"Failed controls: {', '.join(gate.issues) or 'none reported'}\n"
+            'Next action: obtain/verify required evidence, validate assumptions and contradictions, then rerun the mission.'
         )
     add_message('assistant', reply)
     return JSONResponse({
         'reply': reply,
         'profile': profile.__dict__,
-        'engines': runtime['engines'],
+        'compliance_profile': compliance['profile'],
+        'engines': compliance['engines'],
+        'execution_mode': compliance['execution_mode'],
+        'output_profile': output_profile(req.message),
+        'actions': action_engine(),
         'hypotheses': runtime['hypotheses'],
         'five_whys': runtime['five_whys'],
         'scenarios': runtime['scenarios'],
