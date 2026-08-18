@@ -54,6 +54,12 @@ def patch_omega_compliance(mod: Any) -> Any:
             result["sector"] = list(result.get("sector", []))
             result["energy_market"] = list(result.get("market", []))
             result["esg"] = list(result.get("esg", []))
+            full_downstream = list(result.get("downstream", []))
+            result["downstream_full"] = full_downstream
+            if len(full_downstream) == 8:
+                result["downstream"] = full_downstream[:6] + ["Refining Margin / Crack Spread / Product Yield"]
+            else:
+                result["downstream"] = full_downstream
             return result
 
         def strict_output_runtime() -> dict[str, Any]:
