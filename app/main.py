@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -11,7 +12,13 @@ from .omega_engine import build_runtime_context, final_quality_gate
 from .omega_compliance import master_runtime, action_engine, output_profile
 
 BASE = Path(__file__).resolve().parent.parent
-app = FastAPI(title='PROMBARJIN Ω Enterprise X', version='1.1.0')
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title='PROMBARJIN Ω Enterprise X', version='1.1.0', lifespan=lifespan)
 app.mount('/static', StaticFiles(directory=BASE / 'static'), name='static')
 init_db()
 
@@ -26,10 +33,6 @@ class DecisionRequest(BaseModel):
     title: str
     rationale: str
     confidence: int = 75
-
-@app.on_event('startup')
-def startup():
-    init_db()
 
 @app.get('/', response_class=HTMLResponse)
 def home():
