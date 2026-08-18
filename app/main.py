@@ -10,15 +10,16 @@ from .ai import generate_reply
 from .online import quote, fetch_public_source
 from .omega_engine import build_runtime_context, final_quality_gate
 from .omega_compliance import master_runtime, action_engine, output_profile
+from .omega_strict import build_strict_runtime
 
 BASE = Path(__file__).resolve().parent.parent
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+def lifespan(app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title='PROMBARJIN Ω Enterprise X', version='1.1.0', lifespan=lifespan)
+app = FastAPI(title='PROMBARJIN Ω Enterprise X', version='1.2.0', lifespan=lifespan)
 app.mount('/static', StaticFiles(directory=BASE / 'static'), name='static')
 init_db()
 
@@ -48,6 +49,7 @@ def health():
         'omega_runtime': True,
         'governance_gate': True,
         'strict_spec_version': '1.0',
+        'strict_runtime': True,
     }
 
 @app.get('/api/state')
@@ -84,6 +86,7 @@ def source(url: str):
 @app.post('/api/chat')
 def chat(req: ChatRequest):
     add_message('user', req.message)
+    strict = build_strict_runtime(req.message, evidence_count=0)
     compliance = master_runtime(req.message)
     runtime = build_runtime_context(req.message)
     profile = runtime['profile']
@@ -94,24 +97,28 @@ def chat(req: ChatRequest):
         f"Mission={profile.mission}; Primary={profile.primary_domain}; Secondary={profile.secondary_domains}; "
         f"Complexity={profile.complexity}; Urgency={profile.urgency}; Risk={profile.decision_risk}; "
         f"Evidence={profile.evidence_requirement}; Depth={profile.required_depth}; Output={profile.expected_output}. "
-        f"Compliance engines={compliance['engines']}; execution_mode={compliance['execution_mode']}. "
-        'Apply problem identification, first/second/third order analysis, root cause analysis, counterfactuals, '
-        'minimum three alternative hypotheses, assumption audit, bias firewall, information asymmetry, decision impact, '
-        'uncertainty disclosure, research/source discipline, decision matrix, risk analysis, domain controls, memory, '
-        'governance, audit traceability and output compilation. Never fabricate, never invent sources, and never expose internal chain-of-thought.'
+        f"Strict spec gate={strict['gate']}; compliance engines={compliance['engines']}; execution_mode={compliance['execution_mode']}. "
+        'Apply all 11 OMEGA parts; never fabricate; never invent sources; identify assumptions; separate fact/inference/estimate/opinion/speculation; '
+        'use research discipline; alternatives; risk; financial/domain controls; memory; governance; audit traceability; output compilation. '
+        'Never expose internal chain-of-thought.'
     )
     reply = generate_reply(req.message, context, get_messages())
     gate = final_quality_gate(answer=reply, profile=profile, evidence=[], risks=[], audit=runtime['audit'])
-    if not gate.release_ready:
+    if not strict['gate']['release_ready'] and profile.evidence_requirement == 'high':
         reply = (
-            'OMEGA RELEASE GATE: BLOCKED. The current execution did not satisfy the strict evidence/governance release conditions.\n\n'
-            f"Failed controls: {', '.join(gate.issues) or 'none reported'}\n"
-            'Next action: obtain/verify required evidence, validate assumptions and contradictions, then rerun the mission.'
+            'OMEGA RELEASE GATE: BLOCKED. Verified evidence is required for this high-evidence mission.\n\n'
+            'Provide/retrieve sufficient independent evidence, validate assumptions and contradictions, then rerun the mission.'
+        )
+    elif not gate.release_ready:
+        reply = (
+            'OMEGA QUALITY GATE: additional validation required before a definitive recommendation.\n\n'
+            f"Failed controls: {', '.join(gate.issues) or 'insufficient validation'}"
         )
     add_message('assistant', reply)
     return JSONResponse({
         'reply': reply,
         'profile': profile.__dict__,
+        'strict_spec': strict,
         'compliance_profile': compliance['profile'],
         'engines': compliance['engines'],
         'execution_mode': compliance['execution_mode'],
