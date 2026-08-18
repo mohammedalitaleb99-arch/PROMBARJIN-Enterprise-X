@@ -4,6 +4,5 @@ async function exec(){const msg=input.value.trim();if(!msg)return;add('user',msg
 send.onclick=exec;input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))exec()});
 const quoteBtn=document.getElementById('quote'), symbol=document.getElementById('symbol'), quoteOut=document.getElementById('quoteOut');
 async function getQuote(){const s=symbol.value.trim();if(!s)return;quoteBtn.disabled=true;quoteOut.textContent='Loading...';try{const r=await fetch('/api/market/quote?symbol='+encodeURIComponent(s),{cache:'no-store'});const j=await r.json();if(!r.ok){throw new Error(j.detail||('HTTP '+r.status))}quoteOut.textContent=JSON.stringify(j,null,2)}catch(e){quoteOut.textContent='Market error: '+e.message}finally{quoteBtn.disabled=false}}
-if(quoteBtn){quoteBtn.onclick=getQuote;getQuote();setInterval(getQuote,15000)}
+if(quoteBtn){quoteBtn.onclick=getQuote}
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
-fetch('/health',{cache:'no-store'}).catch(()=>{});
