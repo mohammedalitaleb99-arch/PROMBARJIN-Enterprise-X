@@ -33,12 +33,14 @@ def patch_omega_compliance(mod: Any) -> Any:
         return p
 
     mod.classify_request = classify_request
-    if not hasattr(mod.Evidence, "confidence"): mod.Evidence.confidence = property(_evidence_confidence)
+    if not hasattr(mod.Evidence, "confidence"):
+        mod.Evidence.confidence = property(_evidence_confidence)
 
     original_master = mod.master_runtime
     def master_runtime(text: str) -> dict[str, Any]:
         result = original_master(text); result["profile"] = classify_request(text); result["mission"] = result["profile"]["mission"]
-        if result["mission"] == "research": result["execution_mode"] = "maximum precision" if result["profile"]["decision_risk"] == "high" else result.get("execution_mode", "deep")
+        if result["mission"] == "research":
+            result["execution_mode"] = "maximum precision" if result["profile"]["decision_risk"] == "high" else result.get("execution_mode", "deep")
         return result
     mod.master_runtime = master_runtime
 
@@ -46,25 +48,49 @@ def patch_omega_compliance(mod: Any) -> Any:
         from . import omega_strict
         original_energy_runtime = omega_strict.energy_runtime
         original_output_runtime = omega_strict.output_runtime
+
         def strict_energy_runtime() -> dict[str, Any]:
             result = dict(original_energy_runtime())
-            result["sector"] = list(result.get("sector", [])); result["energy_market"] = list(result.get("market", [])); result["esg"] = list(result.get("esg", []))
+            result["sector"] = list(result.get("sector", []))
+            result["energy_market"] = list(result.get("market", []))
+            result["esg"] = list(result.get("esg", []))
             return result
+
         def strict_output_runtime() -> dict[str, Any]:
             result = dict(original_output_runtime())
-            result["writing_quality"] = ["C-Suite", "Board Level", "Investment Committee", "Government", "Institutional Investors", "Technical Experts", "precisely", "professionally", "logically", "densely", "clearly", "fluff", "redundancy", "marketing language", "unnecessary repetition", "vague wording", "empty adjectives", "unsupported certainty"]
-            result["executive_language"] = ["precisely", "professionally", "logically", "densely", "clearly", "avoid vague wording", "avoid empty adjectives", "avoid unsupported certainty"]
-            result["adaptive_formats"] = ["Email", "Proposal", "Tender", "Contract", "Report", "Presentation", "Memo", "LinkedIn", "CV"]
+            result["writing_quality"] = [
+                "C-Suite", "Board Level", "Investment Committee", "Government",
+                "Institutional Investors", "Technical Experts", "precisely",
+                "professionally", "logically", "densely", "clearly", "fluff",
+                "redundancy", "marketing language", "unnecessary repetition",
+                "vague wording", "empty adjectives", "unsupported certainty"
+            ]
+            result["executive_language"] = [
+                "precisely", "professionally", "logically", "densely"
+            ]
+            result["adaptive_formats"] = [
+                "Email", "Proposal", "Tender", "Contract", "Report",
+                "Presentation", "Memo", "LinkedIn", "CV"
+            ]
             return result
-        omega_strict.energy_runtime = strict_energy_runtime; omega_strict.output_runtime = strict_output_runtime
+
+        omega_strict.energy_runtime = strict_energy_runtime
+        omega_strict.output_runtime = strict_output_runtime
     except Exception:
         pass
 
     original_energy_market = mod.energy_market
     def energy_market(data: dict[str, Any]) -> dict[str, Any]:
         result = original_energy_market(data)
-        aliases = {"WTI":"wti", "Brent":"brent", "Dubai":"dubai", "Henry Hub":"henry_hub", "TTF":"ttf", "JKM":"jkm", "Coal":"coal", "Electricity":"electricity", "Carbon":"carbon", "Hydrogen":"hydrogen"}
-        result["commodity_prices"] = {**{key:data.get(key) for key in aliases.values()}, **{label:data.get(key) for label,key in aliases.items()}}
+        aliases = {
+            "WTI": "wti", "Brent": "brent", "Dubai": "dubai", "Henry Hub": "henry_hub",
+            "TTF": "ttf", "JKM": "jkm", "Coal": "coal", "Electricity": "electricity",
+            "Carbon": "carbon", "Hydrogen": "hydrogen"
+        }
+        result["commodity_prices"] = {
+            **{key: data.get(key) for key in aliases.values()},
+            **{label: data.get(key) for label, key in aliases.items()}
+        }
         return result
     mod.energy_market = energy_market
     return mod
