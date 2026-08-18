@@ -53,6 +53,7 @@ def patch_omega_compliance(mod: Any) -> Any:
         def strict_output_runtime() -> dict[str, Any]:
             result = dict(original_output_runtime())
             result["writing_quality"] = ["C-Suite", "Board Level", "Investment Committee", "Government", "Institutional Investors", "Technical Experts", "precisely", "professionally", "logically", "densely", "clearly", "fluff", "redundancy", "marketing language", "unnecessary repetition", "vague wording", "empty adjectives", "unsupported certainty"]
+            result["executive_language"] = ["precisely", "professionally", "logically", "densely", "clearly", "avoid vague wording", "avoid empty adjectives", "avoid unsupported certainty"]
             return result
         omega_strict.energy_runtime = strict_energy_runtime; omega_strict.output_runtime = strict_output_runtime
     except Exception:
