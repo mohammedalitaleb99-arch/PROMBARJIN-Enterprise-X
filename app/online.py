@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote as urlquote
 import httpx
 
 ALLOWED_HOSTS = {
@@ -37,18 +37,54 @@ def fetch_public_source(url: str) -> dict:
 
 
 def quote(symbol: str) -> dict:
-    key = os.getenv('TWELVE_DATA_API_KEY')
-    if not key:
-        return {'status': 'not_configured', 'symbol': symbol, 'message': 'Set TWELVE_DATA_API_KEY on the server.'}
-    with httpx.Client(timeout=10) as client:
-        r = client.get('https://api.twelvedata.com/price', params={'symbol': symbol, 'apikey': key})
+    """Return a no-key market quote from Yahoo Finance's chart endpoint."""
+    symbol = symbol.strip().upper()
+    if not symbol:
+        return {'status': 'error', 'message': 'Symbol is required.'}
+
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{urlquote(symbol, safe='')}"
+    params = {
+        'range': '1d',
+        'interval': '1m',
+        'includePrePost': 'true',
+        'events': 'div,splits',
+    }
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Android; PROMBARJIN/1.0)',
+        'Accept': 'application/json',
+    }
+    with httpx.Client(timeout=10, follow_redirects=True, headers=headers) as client:
+        r = client.get(url, params=params)
         r.raise_for_status()
-        data = r.json()
+        payload = r.json()
+
+    result = (payload.get('chart') or {}).get('result') or []
+    if not result:
+        error = (payload.get('chart') or {}).get('error') or {}
+        return {
+            'status': 'error',
+            'provider': 'Yahoo Finance',
+            'symbol': symbol,
+            'message': error.get('description') or 'No quote data returned.',
+        }
+
+    meta = result[0].get('meta') or {}
+    price = meta.get('regularMarketPrice')
+    if price is None:
+        price = meta.get('previousClose')
+
+    currency = meta.get('currency')
+    exchange = meta.get('exchangeName')
+    market_state = meta.get('marketState')
+
     return {
-        'status': 'ok' if 'price' in data else 'error',
-        'provider': 'Twelve Data',
+        'status': 'ok' if price is not None else 'error',
+        'provider': 'Yahoo Finance',
         'symbol': symbol,
-        'price': data.get('price'),
+        'price': price,
+        'currency': currency,
+        'exchange': exchange,
+        'market_state': market_state,
         'timestamp': datetime.now(timezone.utc).isoformat(),
-        'raw': data,
+        'raw': meta,
     }
