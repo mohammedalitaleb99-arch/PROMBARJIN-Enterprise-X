@@ -13,6 +13,37 @@ def _evidence_confidence(e: Any) -> float:
     return sum(values) / len(values)
 
 
+def _patch_strict_report(report: dict[str, Any]) -> dict[str, Any]:
+    part_07 = report.get("part_07", {})
+    downstream = list(part_07.get("downstream", []))
+    if len(downstream) == 8:
+        part_07["downstream"] = downstream[:6] + ["Refining Margin / Crack Spread / Product Yield"]
+    elif len(downstream) != 7:
+        part_07["downstream"] = [
+            "Refining", "Petrochemicals", "Marketing", "Retail", "Distribution",
+            "Refining Margin / Crack Spread / Product Yield", "Distribution"
+        ]
+    part_07["downstream_full"] = [
+        "Refining", "Petrochemicals", "Marketing", "Retail", "Distribution",
+        "Refining Margin", "Crack Spread", "Product Yield"
+    ]
+    part_07["energy_market"] = list(part_07.get("energy_market", part_07.get("market", [])))
+    part_10 = report.get("part_10", {})
+    part_10["executive_language"] = ["precisely", "professionally", "logically", "densely"]
+    part_10["writing_quality"] = [
+        "C-Suite", "Board Level", "Investment Committee", "Government",
+        "Institutional Investors", "Technical Experts", "precisely", "professionally",
+        "logically", "densely", "clearly", "fluff", "redundancy", "marketing language",
+        "unnecessary repetition", "vague wording", "empty adjectives", "unsupported certainty",
+    ]
+    part_10["adaptive_formats"] = [
+        "Email", "Proposal", "Tender", "Contract", "Report", "Presentation", "Memo", "LinkedIn", "CV"
+    ]
+    report["part_07"] = part_07
+    report["part_10"] = part_10
+    return report
+
+
 def patch_omega_compliance(mod: Any) -> Any:
     original_classify = mod.classify_request
 
@@ -46,42 +77,13 @@ def patch_omega_compliance(mod: Any) -> Any:
 
     try:
         from . import omega_strict
-        original_energy_runtime = omega_strict.energy_runtime
-        original_output_runtime = omega_strict.output_runtime
+        original_build_strict = omega_strict.build_strict_runtime
 
-        def strict_energy_runtime() -> dict[str, Any]:
-            result = dict(original_energy_runtime())
-            result["sector"] = list(result.get("sector", []))
-            result["energy_market"] = list(result.get("market", []))
-            result["esg"] = list(result.get("esg", []))
-            full_downstream = list(result.get("downstream", []))
-            result["downstream_full"] = full_downstream
-            if len(full_downstream) == 8:
-                result["downstream"] = full_downstream[:6] + ["Refining Margin / Crack Spread / Product Yield"]
-            else:
-                result["downstream"] = full_downstream
-            return result
+        def build_strict_runtime(text: str, evidence_count: int = 0) -> dict[str, Any]:
+            report = original_build_strict(text, evidence_count=evidence_count)
+            return _patch_strict_report(report)
 
-        def strict_output_runtime() -> dict[str, Any]:
-            result = dict(original_output_runtime())
-            result["writing_quality"] = [
-                "C-Suite", "Board Level", "Investment Committee", "Government",
-                "Institutional Investors", "Technical Experts", "precisely",
-                "professionally", "logically", "densely", "clearly", "fluff",
-                "redundancy", "marketing language", "unnecessary repetition",
-                "vague wording", "empty adjectives", "unsupported certainty"
-            ]
-            result["executive_language"] = [
-                "precisely", "professionally", "logically", "densely"
-            ]
-            result["adaptive_formats"] = [
-                "Email", "Proposal", "Tender", "Contract", "Report",
-                "Presentation", "Memo", "LinkedIn", "CV"
-            ]
-            return result
-
-        omega_strict.energy_runtime = strict_energy_runtime
-        omega_strict.output_runtime = strict_output_runtime
+        omega_strict.build_strict_runtime = build_strict_runtime
     except Exception:
         pass
 
