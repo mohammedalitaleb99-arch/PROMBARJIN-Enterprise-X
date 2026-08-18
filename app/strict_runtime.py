@@ -23,8 +23,22 @@ def patch_omega_compliance(mod: Any) -> Any:
         p = original_classify(text)
         t = text.lower()
         matched = [d for d in mod.DOMAINS if d in t]
-        p["primary_domain"] = matched[0] if matched else "general"
-        p["secondary_domains"] = matched[1:]
+
+        # Primary-domain precedence follows the domain hierarchy used by the OMEGA spec:
+        # sector-specific Oil & Gas takes precedence when explicitly present; otherwise
+        # Finance controls investment/accounting/valuation language.
+        if "oil & gas" in t or ("oil" in t and "gas" in t):
+            primary = "oil & gas"
+        elif any(term in t for term in ("finance", "investment", "accounting", "npv", "irr", "valuation", "financial")):
+            primary = "finance"
+        elif matched:
+            primary = matched[0]
+        else:
+            primary = "general"
+
+        p["primary_domain"] = primary
+        p["secondary_domains"] = [d for d in matched if d != primary]
+
         # Explicit research is a research mission even when the request also asks for a decision/recommendation.
         if any(x in t for x in ("research", "investigate", "research an", "research the")):
             p["mission"] = "research"
