@@ -1,17 +1,10 @@
 services:
   - type: web
     name: prombarjin-enterprise-x
-    runtime: python
+    runtime: docker
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    region: frankfurt
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /health
-    envVars:
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: OPENAI_MODEL
-        value: gpt-5-mini
-      - key: TWELVE_DATA_API_KEY
-        sync: false
-      - key: DATABASE_URL
-        sync: false
+    autoDeployTrigger: commit
