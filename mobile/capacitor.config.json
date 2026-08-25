@@ -1,8 +1,8 @@
 {
-  "appId": "com.prombarjin.omegaenterprise.v2",
+  "appId": "com.prombarjin.omegaenterprise.v3",
   "appName": "PROMBARJIN Ω Enterprise X",
   "webDir": "www",
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": false
   }
 }
