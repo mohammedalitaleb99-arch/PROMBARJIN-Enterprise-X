@@ -1,5 +1,7 @@
-# PROMBARJIN Ω Enterprise X — Android wrapper
+# PROMBARJIN Ω Enterprise X v3 — Android
 
-This folder builds a native Android package from the existing PROMBARJIN web interface using Capacitor.
+Native Android delivery uses Capacitor to package the executive web workspace.
 
-The GitHub Actions workflow creates the Android project at build time, copies `../static` into `mobile/www`, and produces an installable debug APK artifact.
+The authoritative GitHub Actions build copies `../static` into `mobile/www`, generates the Android project, verifies package identity `com.prombarjin.omegaenterprise.v3`, validates APK integrity, and uploads `PROMBARJIN-OMEGA-ENTERPRISE-X-v3`.
+
+The mobile client keeps an encrypted-by-platform local-first outbox contract in browser storage and never contains an OpenAI API key.
