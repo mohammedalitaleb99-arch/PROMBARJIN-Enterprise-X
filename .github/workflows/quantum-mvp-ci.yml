@@ -1,0 +1,19 @@
+name: PROMBARJIN Quantum MVP CI
+
+on:
+  push:
+    branches: ["feature/quantum-mvp"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  quantum-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: pytest -q tests/quantum/test_quantum_state.py
