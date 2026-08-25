@@ -4,7 +4,7 @@ import time
 import uuid
 from typing import Any
 
-from .db import connect, _execute
+from .db import connect, _execute, _postgres
 
 MAX_OPERATIONS = 500
 MAX_PAYLOAD_BYTES = 512 * 1024
@@ -22,7 +22,7 @@ def _hash_event(prev_hash: str, event: dict[str, Any]) -> str:
 
 def init_reconciliation_db() -> None:
     with connect() as c:
-        if getattr(c, "__class__", None).__module__.startswith("psycopg"):
+        if _postgres():
             c.execute("CREATE TABLE IF NOT EXISTS reconciliation_batches (sync_batch_id TEXT PRIMARY KEY, device_id TEXT NOT NULL, received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, status TEXT NOT NULL, operation_count INTEGER NOT NULL, error TEXT)")
             c.execute("CREATE TABLE IF NOT EXISTS reconciliation_idempotency (idempotency_key TEXT PRIMARY KEY, local_id TEXT NOT NULL, device_id TEXT NOT NULL, server_hash TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)")
             c.execute("CREATE TABLE IF NOT EXISTS reconciliation_ledger (sequence BIGSERIAL PRIMARY KEY, event_id TEXT UNIQUE NOT NULL, event_type TEXT NOT NULL, actor TEXT NOT NULL, device_id TEXT NOT NULL, local_id TEXT NOT NULL, idempotency_key TEXT NOT NULL, offline_timestamp BIGINT NOT NULL, reconciled_at DOUBLE PRECISION NOT NULL, prev_hash TEXT NOT NULL, server_hash TEXT UNIQUE NOT NULL, payload_json TEXT NOT NULL)")
@@ -60,7 +60,6 @@ def reconcile(batch: dict[str, Any], actor: str) -> dict[str, Any]:
     now = int(time.time())
     results: list[dict[str, Any]] = []
     with connect() as c:
-        init_reconciliation_db()
         existing_batch = _execute(c, "SELECT status FROM reconciliation_batches WHERE sync_batch_id=?", (batch_id,)).fetchone()
         if existing_batch:
             status = dict(existing_batch)["status"]
