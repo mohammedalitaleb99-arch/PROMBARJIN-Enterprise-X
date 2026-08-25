@@ -1,30 +1,40 @@
-# PROMBARJIN Ω Enterprise X
+# PROMBARJIN Ω Enterprise X v3
 
-Persistent, local-first executive intelligence workspace based on the supplied PROMBARJIN Ω Enterprise X specification.
+Enterprise executive intelligence runtime with a server-authoritative **Governed Offline Reconciliation Protocol (GORP)** and Android delivery through GitHub Actions.
 
-## Run locally
+## v3 capabilities
+- Android/PWA executive workspace
+- Local-first outbox with event IDs and idempotency keys
+- Deterministic reconciliation using aggregate version + sequence, not client clock
+- Conservative deterministic merge; ambiguous conflicts require human review
+- Append-only cryptographic ledger with hash-chain checkpoint verification
+- Advisory-only OpenAI conflict intelligence with safe fallback
+- Existing OMEGA evidence, quality-gate, governance and executive runtime
+- Backend tests + compile/security preflight + automated APK build
+
+## Security boundary
+The Android client never receives or embeds `OPENAI_API_KEY`. OpenAI access is server-side only through the backend environment/GitHub deployment secret.
+
+## Local backend
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
-Open http://localhost:8000
-
-## Run with Docker
-```bash
-cp .env.example .env
-# Put OPENAI_API_KEY in .env only when model-backed responses are needed.
-docker compose up --build -d
-```
-The SQLite database lives in the `prombarjin_data` named volume and survives container restarts.
 
 ## Tests
 ```bash
 pytest -q
+python -m compileall -q app
 ```
 
-## Architecture
-`UI -> API -> Orchestrator -> Domain Routing -> Model Adapter -> Quality Gate -> Persistent Ledger`
+## Reconciliation API
+`POST /api/v1/sync/reconcile`
 
-The design deliberately keeps the policy/specification separate from the model provider so the system can evolve without rewriting the core runtime.
+`GET /api/v1/sync/ledger/verify`
+
+The server is authoritative. Duplicate idempotency keys are skipped, integrity failures are rejected, deterministic non-overlapping patches may merge, and unresolved version conflicts are held for human review.
+
+## Android artifact
+GitHub Actions builds the debug artifact named **PROMBARJIN-OMEGA-ENTERPRISE-X-v3** and validates its Android package identity before upload.
