@@ -60,9 +60,14 @@ def reconcile(batch: dict[str, Any], actor: str) -> dict[str, Any]:
     now = int(time.time())
     results: list[dict[str, Any]] = []
     with connect() as c:
+        if _postgres():
+            c.execute("SELECT pg_advisory_xact_lock(918273645)")
+        else:
+            c.execute("BEGIN IMMEDIATE")
         existing_batch = _execute(c, "SELECT status FROM reconciliation_batches WHERE sync_batch_id=?", (batch_id,)).fetchone()
         if existing_batch:
             status = dict(existing_batch)["status"]
+            c.rollback()
             return {"sync_batch_id": batch_id, "status": "SKIPPED_BATCH_DUPLICATE", "batch_status": status, "processed_count": 0, "details": []}
 
         _execute(c, "INSERT INTO reconciliation_batches(sync_batch_id,device_id,status,operation_count) VALUES (?,?,?,?)", (batch_id, device_id, "PROCESSING", len(operations)))
