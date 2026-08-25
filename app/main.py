@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,6 +12,7 @@ from .online import quote, fetch_public_source
 from .omega_engine import EvidenceItem, build_runtime_context, final_quality_gate
 from .omega_compliance import master_runtime, action_engine, output_profile
 from .omega_strict import build_strict_runtime
+from .reconciliation import init_reconciliation_db, reconcile
 
 BASE = Path(__file__).resolve().parent.parent
 
@@ -22,12 +24,7 @@ RESEARCH_SOURCE_URLS = {
 
 
 def _collect_research_evidence(message: str) -> tuple[list[EvidenceItem], list[str]]:
-    """Fetch multiple independent primary sources for high-evidence missions.
-
-    Evidence is only considered available when the source was actually fetched with
-    a successful HTTP response. Failed sources are retained as explicit issues rather
-    than silently converted into fabricated evidence.
-    """
+    """Fetch multiple independent primary sources for high-evidence missions."""
     evidence: list[EvidenceItem] = []
     issues: list[str] = []
     lower = message.lower()
@@ -63,11 +60,13 @@ def _collect_research_evidence(message: str) -> tuple[list[EvidenceItem], list[s
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    init_reconciliation_db()
     yield
 
-app = FastAPI(title='PROMBARJIN Ω Enterprise X', version='1.2.0', lifespan=lifespan)
+app = FastAPI(title='PROMBARJIN Ω Enterprise X', version='1.3.0', lifespan=lifespan)
 app.mount('/static', StaticFiles(directory=BASE / 'static'), name='static')
 init_db()
+init_reconciliation_db()
 
 class ChatRequest(BaseModel):
     message: str
@@ -94,6 +93,7 @@ def health():
         'market_gateway': True,
         'omega_runtime': True,
         'governance_gate': True,
+        'offline_reconciliation': True,
         'strict_spec_version': '1.0',
         'strict_runtime': True,
     }
@@ -112,6 +112,15 @@ def decision(req: DecisionRequest):
     confidence = max(0, min(100, req.confidence))
     add_decision(req.title, req.rationale, confidence)
     return {'status': 'saved'}
+
+@app.post('/api/v1/governance/reconcile')
+def governance_reconcile(batch: dict[str, Any]):
+    try:
+        return reconcile(batch, actor='offline-sync-service')
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=409, detail=f'reconciliation_quarantined:{exc}')
 
 @app.get('/api/market/quote')
 def market_quote(symbol: str):
